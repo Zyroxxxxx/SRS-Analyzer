@@ -1,0 +1,2 @@
+package com.vlu.srsanalyzer.dto; import lombok.*; import java.time.LocalDateTime;
+@Data @AllArgsConstructor public class AdminUsageResponse {private Long id; private String username; private Long requirementId; private String requirementTitle; private String prompt; private int promptTokens; private int outputTokens; private int totalTokens; private String provider; private LocalDateTime createdAt;}
