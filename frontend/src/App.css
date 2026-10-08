@@ -467,3 +467,105 @@
   cursor:not-allowed;
   opacity:.6;
 }
+
+
+/* ================== App confirmation modal ================== */
+.app-modal-backdrop{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(18,29,24,.48);
+  backdrop-filter:blur(4px);
+  animation:appModalFade .16s ease-out;
+}
+.app-modal{
+  width:min(460px,100%);
+  background:#fff;
+  border:1px solid #dfe7e3;
+  border-radius:16px;
+  box-shadow:0 24px 70px rgba(22,39,32,.22);
+  padding:24px;
+  animation:appModalIn .18s ease-out;
+}
+.app-modal__icon{
+  width:42px;
+  height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:12px;
+  background:#eef5f1;
+  color:var(--green);
+  font-size:19px;
+  font-weight:800;
+  margin-bottom:15px;
+}
+.app-modal__icon--danger{
+  background:#fff0ee;
+  color:#a34f47;
+}
+.app-modal__content h3{
+  margin:0;
+  color:var(--ink);
+  font-size:17px;
+  line-height:1.3;
+}
+.app-modal__content p{
+  margin:8px 0 0;
+  color:#66756e;
+  font-size:12px;
+  line-height:1.65;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.app-modal__actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:9px;
+  margin-top:22px;
+}
+.app-modal__actions button{
+  min-width:94px;
+  height:38px;
+  padding:0 15px;
+  border-radius:8px;
+  font-size:11px;
+  font-weight:700;
+  cursor:pointer;
+  transition:all .16s ease;
+}
+.app-modal__cancel{
+  border:1px solid #d8e1dc;
+  background:#f7f9f8;
+  color:#56665f;
+}
+.app-modal__cancel:hover{
+  background:#eef3f0;
+}
+.app-modal__confirm{
+  border:1px solid #5b7f70;
+  background:#5b7f70;
+  color:#fff;
+}
+.app-modal__confirm:hover{
+  background:#496b5d;
+  transform:translateY(-1px);
+}
+.app-modal__confirm--danger{
+  border-color:#a65a52;
+  background:#a65a52;
+}
+.app-modal__confirm--danger:hover{
+  background:#914a43;
+}
+@keyframes appModalFade{from{opacity:0}to{opacity:1}}
+@keyframes appModalIn{from{opacity:0;transform:translateY(7px) scale(.985)}to{opacity:1;transform:none}}
+@media(max-width:520px){
+  .app-modal{padding:20px;border-radius:14px}
+  .app-modal__actions{display:grid;grid-template-columns:1fr 1fr}
+  .app-modal__actions button{width:100%}
+}

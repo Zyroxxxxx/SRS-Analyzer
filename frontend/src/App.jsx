@@ -231,7 +231,52 @@ const UI_TRANSLATIONS = {
   'Active': 'Active',
   'Locked': 'Locked',
   'Gemini': 'Gemini',
-  'token': 'tokens'
+  'token': 'tokens',
+  'đã tồn tại': 'already exists',
+  'tài khoản': 'account',
+  'tồn tại': 'exists',
+  'mật khẩu': 'password',
+  'yếu': 'weak',
+  'Tên tài khoản đã được sử dụng.': 'This username is already in use.',
+  'Email này đã được đăng ký.': 'This email is already registered.',
+  'Tài khoản này đã tồn tại.': 'This account already exists.',
+  'Mật khẩu quá yếu.': 'The password is too weak.',
+  'Đăng ký tài khoản': 'Create account',
+  'Tạo tài khoản cá nhân để bắt đầu quản lý yêu cầu phần mềm của riêng bạn.': 'Create a personal account to start managing your own software requirements.',
+  'Ví dụ: nguyenvana': 'Example: nguyenvana',
+  'Nguyễn Văn A': 'Nguyen Van A',
+  'Tối thiểu 6 ký tự': 'At least 6 characters',
+  'bởi': 'by',
+  'CHI TIẾT NGƯỜI DÙNG': 'USER DETAILS',
+  'Tài khoản:': 'Username:',
+  'Vai trò:': 'Role:',
+  'Trạng thái:': 'Status:',
+  'Tổng Requirement:': 'Total requirements:',
+  'Lượt phân tích AI:': 'AI analyses:',
+  'Tổng token đã dùng:': 'Total tokens used:',
+  'Họ tên hiển thị': 'Display name',
+  'Tài khoản quản trị hiện tại': 'Current administrator account',
+  'Admin gốc của hệ thống': 'Root administrator of the system',
+  'Thao tác này xóa vĩnh viễn tài khoản, Requirement và dữ liệu AI liên quan.': 'This permanently deletes the account, its requirements, and related AI data.',
+  'Người dùng này chưa tạo yêu cầu nào.': 'This user has not created any requirements yet.',
+  'Chưa có lượt phân tích AI nào.': 'No AI analysis activity yet.',
+  'Vui lòng điền tài khoản, email và mật khẩu.': 'Please fill in username, email, and password.',
+  'Tạo tài khoản thất bại.': 'Failed to create account.',
+  'Không thể tải danh sách người dùng.': 'Unable to load user list.',
+  'Chưa có tên': 'No name',
+  'Không xác định': 'Unknown',
+  'Bạn có chắc muốn xóa nhật ký này?': 'Are you sure you want to delete this audit log?',
+  'Không thể xóa nhật ký.': 'Unable to delete audit log.',
+  'Bạn có chắc muốn xóa toàn bộ nhật ký quản trị? Hành động này không thể hoàn tác.': 'Are you sure you want to delete all administrator audit logs? This action cannot be undone.',
+  'Không thể xóa toàn bộ nhật ký.': 'Unable to delete all audit logs.',
+  'Tìm nhật ký phân tích AI': 'Search AI analysis logs',
+  'Không thể lưu tên hiển thị.': 'Unable to save display name.',
+  'Không thể kết nối máy chủ. Vui lòng kiểm tra backend.': 'Unable to connect to the server. Please check the backend.',
+  'Phiên đăng nhập đã hết hạn.': 'Your session has expired.',
+  'Không thể xóa nhật ký đã chọn.': 'Unable to delete selected audit logs.',
+  'KẾT QUẢ PHÂN TÍCH': 'ANALYSIS RESULT',
+  'Xuất PDF (HTML)': 'Export PDF (HTML)',
+  'Xuất Excel (kèm Ma trận truy vết)': 'Export Excel (with Traceability Matrix)'
 }
 
 function getUiLanguage() { return localStorage.getItem(UI_LANGUAGE_KEY) || 'VI' }
@@ -241,8 +286,31 @@ function setUiLanguage(language) {
 }
 function translateValue(value, language) {
   if (!value) return value
+  const text = String(value)
+
+  // Normalize common Spring/Bean Validation messages so backend validation
+  // errors are also bilingual (e.g. "title must not be blank").
+  if (/must\s+not\s+be\s+blank/i.test(text)) {
+    return language === 'EN'
+      ? 'Required fields must not be blank.'
+      : 'Các trường bắt buộc không được để trống.'
+  }
+  if (/must\s+not\s+be\s+null/i.test(text)) {
+    return language === 'EN'
+      ? 'Required fields must not be null.'
+      : 'Các trường bắt buộc không được để trống.'
+  }
+  if (/must\s+be\s+at\s+least/i.test(text) && /characters?/i.test(text)) {
+    return language === 'EN' ? text : 'Mật khẩu không đủ độ dài tối thiểu.'
+  }
+  if (/không\s+được\s+để\s+trống|khong\s+duoc\s+de\s+trong/i.test(text)) {
+    return language === 'EN'
+      ? 'Required fields must not be blank.'
+      : 'Các trường bắt buộc không được để trống.'
+  }
+
   if (language === 'EN') {
-    if (UI_TRANSLATIONS[value]) return UI_TRANSLATIONS[value]
+    if (UI_TRANSLATIONS[text]) return UI_TRANSLATIONS[text]
     const count = value.match(/^(\d+) (yêu cầu|người dùng|bản ghi|lượt phân tích)$/)
     if (count) return `${count[1]} ${({ 'yêu cầu':'requirements', 'người dùng':'users', 'bản ghi':'records', 'lượt phân tích':'analyses' })[count[2]]}`
     const owner = value.match(/^(\s*[·•]\s*)bởi(\s+.+)$/i)
@@ -267,6 +335,73 @@ function useUiLanguage() {
   useEffect(() => { const fn = e => setLanguage(e.detail || getUiLanguage()); window.addEventListener('ui-language-changed', fn); return () => window.removeEventListener('ui-language-changed', fn) }, [])
   return language
 }
+
+/**
+ * App-level confirmation dialog.
+ * Replaces browser window.confirm() so users never see the native
+ * "localhost says" popup. The dialog follows the current UI language.
+ */
+function showConfirmPopup({ title, message, confirmLabel, cancelLabel, danger = true } = {}) {
+  return new Promise(resolve => {
+    const language = getUiLanguage()
+    const overlay = document.createElement('div')
+    overlay.className = 'app-modal-backdrop'
+    overlay.setAttribute('data-i18n-ignore', 'true')
+    overlay.innerHTML = `
+      <div class="app-modal" role="dialog" aria-modal="true">
+        <div class="app-modal__icon ${danger ? 'app-modal__icon--danger' : ''}">${danger ? '!' : '?'}</div>
+        <div class="app-modal__content">
+          <h3>${escapeHtml(title || (language === 'EN' ? 'Please confirm' : 'Vui lòng xác nhận'))}</h3>
+          <p>${escapeHtml(translateValue(message || '', language))}</p>
+        </div>
+        <div class="app-modal__actions">
+          <button type="button" class="app-modal__cancel">
+            ${escapeHtml(cancelLabel || (language === 'EN' ? 'Cancel' : 'Hủy'))}
+          </button>
+          <button type="button" class="app-modal__confirm ${danger ? 'app-modal__confirm--danger' : ''}">
+            ${escapeHtml(confirmLabel || (language === 'EN' ? 'Confirm' : 'Xác nhận'))}
+          </button>
+        </div>
+      </div>
+    `
+    document.body.appendChild(overlay)
+
+    const dialog = overlay.querySelector('.app-modal')
+    const cancel = overlay.querySelector('.app-modal__cancel')
+    const confirm = overlay.querySelector('.app-modal__confirm')
+
+    let closed = false
+    const cleanup = result => {
+      if (closed) return
+      closed = true
+      document.removeEventListener('keydown', onKeyDown)
+      overlay.remove()
+      resolve(result)
+    }
+    const onKeyDown = event => {
+      if (event.key === 'Escape') cleanup(false)
+      if (event.key === 'Enter' && document.activeElement === confirm) cleanup(true)
+    }
+
+    cancel.addEventListener('click', () => cleanup(false))
+    confirm.addEventListener('click', () => cleanup(true))
+    overlay.addEventListener('click', event => {
+      if (event.target === overlay) cleanup(false)
+    })
+    document.addEventListener('keydown', onKeyDown)
+    requestAnimationFrame(() => confirm.focus())
+  })
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 function applyUiTranslations(language) {
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
   const nodes = []
@@ -310,6 +445,8 @@ function getStoredUser() {
 /* ============================== ĐĂNG NHẬP / ĐĂNG KÝ ============================== */
 
 function Login({ onLogin, onSwitchToRegister }) {
+  const uiLanguage = useUiLanguage()
+  const isEN = uiLanguage === 'EN'
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -326,7 +463,17 @@ function Login({ onLogin, onSwitchToRegister }) {
       localStorage.setItem('srs_user', JSON.stringify(u))
       onLogin(u)
     } catch (e) {
-      setError(e.response?.data?.message || 'Sai tài khoản hoặc mật khẩu.')
+      const backendMessage = e.response?.data?.message
+      if (!e.response) {
+        setError(isEN
+          ? 'Unable to connect to the server. Please check the backend.'
+          : 'Không thể kết nối máy chủ. Vui lòng kiểm tra backend.')
+      } else {
+        setError(
+          translateValue(backendMessage, uiLanguage) ||
+          (isEN ? 'Invalid username or password.' : 'Sai tài khoản hoặc mật khẩu.')
+        )
+      }
     } finally {
       setBusy(false)
     }
@@ -338,52 +485,54 @@ function Login({ onLogin, onSwitchToRegister }) {
       <div className="login-brand">
         <div className="brand-mark">SR</div>
         <div>
-          <strong>Không gian quản lý yêu cầu</strong>
-          <span>Nền tảng quản lý đặc tả phần mềm</span>
+          <strong>{isEN ? 'Requirement Management Workspace' : 'Không gian quản lý yêu cầu'}</strong>
+          <span>{isEN ? 'Software Specification Management Platform' : 'Nền tảng quản lý đặc tả phần mềm'}</span>
         </div>
       </div>
 
       <div className="login-card">
         <div className="login-heading">
-          <span>ĐĂNG NHẬP AN TOÀN</span>
-          <h1>Chào mừng trở lại</h1>
-          <p>Đăng nhập để tiếp tục quản lý các yêu cầu phần mềm.</p>
+          <span>{isEN ? 'SECURE LOGIN' : 'ĐĂNG NHẬP AN TOÀN'}</span>
+          <h1>{isEN ? 'Welcome back' : 'Chào mừng trở lại'}</h1>
+          <p>{isEN ? 'Sign in to continue managing software requirements.' : 'Đăng nhập để tiếp tục quản lý các yêu cầu phần mềm.'}</p>
         </div>
 
         <form onSubmit={submit}>
           <label>
-            Tài khoản
+            {isEN ? 'Username' : 'Tài khoản'}
             <input
               autoFocus
               autoComplete="username"
               value={username}
               onChange={e => setUsername(e.target.value)}
-              placeholder="Nhập tài khoản"
+              placeholder={isEN ? 'Enter username' : 'Nhập tài khoản'}
             />
           </label>
 
           <label>
-            Mật khẩu
+            {isEN ? 'Password' : 'Mật khẩu'}
             <input
               type="password"
               autoComplete="current-password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Nhập mật khẩu"
+              placeholder={isEN ? 'Enter password' : 'Nhập mật khẩu'}
             />
           </label>
 
           {error && <div className="alert">{error}</div>}
 
           <button className="primary" disabled={busy}>
-            {busy ? 'Đang đăng nhập…' : 'Đăng nhập'}
+            {busy
+              ? (isEN ? 'Signing in…' : 'Đang đăng nhập…')
+              : (isEN ? 'Login' : 'Đăng nhập')}
           </button>
         </form>
 
         <div className="switch-auth">
-          Chưa có tài khoản?{' '}
+          {isEN ? 'Don’t have an account?' : 'Chưa có tài khoản?'}{' '}
           <button type="button" className="link-btn" onClick={onSwitchToRegister}>
-            Đăng ký ngay
+            {isEN ? 'Register now' : 'Đăng ký ngay'}
           </button>
         </div>
       </div>
@@ -392,7 +541,18 @@ function Login({ onLogin, onSwitchToRegister }) {
 }
 
 function Register({ onRegistered, onSwitchToLogin }) {
-  const [form, setForm] = useState({ username: '', email: '', fullName: '', password: '', confirm: '' })
+  const uiLanguage = useUiLanguage()
+
+  const isEN = uiLanguage === 'EN'
+
+  const [form, setForm] = useState({
+    username: '',
+    email: '',
+    fullName: '',
+    password: '',
+    confirm: ''
+  })
+
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -400,24 +560,105 @@ function Register({ onRegistered, onSwitchToLogin }) {
     return e => setForm(f => ({ ...f, [field]: e.target.value }))
   }
 
+  function getRegisterError(message) {
+    const msg = String(message || '').toLowerCase()
+
+    if (isEN) {
+      if (
+        msg.includes('username') &&
+        (msg.includes('exist') || msg.includes('đã tồn tại') || msg.includes('already'))
+      ) {
+        return 'This username is already in use.'
+      }
+
+      if (
+        msg.includes('email') &&
+        (msg.includes('exist') || msg.includes('đã tồn tại') || msg.includes('already'))
+      ) {
+        return 'This email is already registered.'
+      }
+
+      if (
+        msg.includes('tài khoản') &&
+        msg.includes('tồn tại')
+      ) {
+        return 'This account already exists.'
+      }
+
+      if (
+        msg.includes('mật khẩu') &&
+        (msg.includes('yếu') || msg.includes('weak'))
+      ) {
+        return 'The password is too weak.'
+      }
+
+      return 'Registration failed. Please try again.'
+    }
+
+    if (
+      msg.includes('username') &&
+      (msg.includes('exist') || msg.includes('already') || msg.includes('đã tồn tại'))
+    ) {
+      return 'Tên tài khoản đã được sử dụng.'
+    }
+
+    if (
+      msg.includes('email') &&
+      (msg.includes('exist') || msg.includes('already') || msg.includes('đã tồn tại'))
+    ) {
+      return 'Email này đã được đăng ký.'
+    }
+
+    if (
+      msg.includes('tài khoản') &&
+      msg.includes('tồn tại')
+    ) {
+      return 'Tài khoản này đã tồn tại.'
+    }
+
+    if (
+      msg.includes('mật khẩu') &&
+      (msg.includes('yếu') || msg.includes('weak'))
+    ) {
+      return 'Mật khẩu quá yếu.'
+    }
+
+    return 'Đăng ký thất bại. Vui lòng thử lại.'
+  }
+
   async function submit(e) {
     e.preventDefault()
     setError('')
 
     if (!form.username.trim() || !form.email.trim() || !form.password) {
-      setError('Vui lòng điền đầy đủ tài khoản, email và mật khẩu.')
+      setError(
+        isEN
+          ? 'Please fill in your username, email, and password.'
+          : 'Vui lòng điền đầy đủ tài khoản, email và mật khẩu.'
+      )
       return
     }
+
     if (form.password.length < 6) {
-      setError('Mật khẩu tối thiểu 6 ký tự.')
+      setError(
+        isEN
+          ? 'Password must be at least 6 characters.'
+          : 'Mật khẩu tối thiểu 6 ký tự.'
+      )
       return
     }
+
     if (form.password !== form.confirm) {
-      setError('Mật khẩu nhập lại không khớp.')
+      setError(
+        isEN
+          ? 'Passwords do not match.'
+          : 'Mật khẩu nhập lại không khớp.'
+      )
       return
     }
 
     setBusy(true)
+
     try {
       const u = await register({
         username: form.username.trim(),
@@ -425,11 +666,13 @@ function Register({ onRegistered, onSwitchToLogin }) {
         password: form.password,
         fullName: form.fullName.trim()
       })
+
       localStorage.setItem('srs_token', u.token)
       localStorage.setItem('srs_user', JSON.stringify(u))
+
       onRegistered(u)
     } catch (e) {
-      setError(e.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.')
+      setError(getRegisterError(e.response?.data?.message))
     } finally {
       setBusy(false)
     }
@@ -438,58 +681,160 @@ function Register({ onRegistered, onSwitchToLogin }) {
   return (
     <div className="login-page">
       <UiLanguageSwitcher className="login-language" />
+
       <div className="login-brand">
         <div className="brand-mark">SR</div>
+
         <div>
-          <strong>Không gian quản lý yêu cầu</strong>
-          <span>Nền tảng quản lý đặc tả phần mềm</span>
+          <strong>
+            {isEN
+              ? 'Requirement Management Workspace'
+              : 'Không gian quản lý yêu cầu'}
+          </strong>
+
+          <span>
+            {isEN
+              ? 'Software Specification Management Platform'
+              : 'Nền tảng quản lý đặc tả phần mềm'}
+          </span>
         </div>
       </div>
 
       <div className="login-card">
         <div className="login-heading">
-          <span>TẠO TÀI KHOẢN MỚI</span>
-          <h1>Đăng ký tài khoản</h1>
-          <p>Tạo tài khoản cá nhân để bắt đầu quản lý yêu cầu phần mềm của riêng bạn.</p>
+          <span>
+            {isEN
+              ? 'CREATE NEW ACCOUNT'
+              : 'TẠO TÀI KHOẢN MỚI'}
+          </span>
+
+          <h1>
+            {isEN
+              ? 'Create an account'
+              : 'Đăng ký tài khoản'}
+          </h1>
+
+          <p>
+            {isEN
+              ? 'Create a personal account to start managing your own software requirements.'
+              : 'Tạo tài khoản cá nhân để bắt đầu quản lý yêu cầu phần mềm của riêng bạn.'}
+          </p>
         </div>
 
         <form onSubmit={submit}>
           <label>
-            Tài khoản
-            <input autoFocus autoComplete="username" value={form.username} onChange={set('username')} placeholder="Ví dụ: nguyenvana" />
+            {isEN ? 'Username' : 'Tài khoản'}
+
+            <input
+              autoFocus
+              autoComplete="username"
+              value={form.username}
+              onChange={set('username')}
+              placeholder={
+                isEN
+                  ? 'e.g. nguyenvana'
+                  : 'Ví dụ: nguyenvana'
+              }
+            />
           </label>
 
           <label>
             Email
-            <input type="email" autoComplete="email" value={form.email} onChange={set('email')} placeholder="ban@vidu.com" />
+
+            <input
+              type="email"
+              autoComplete="email"
+              value={form.email}
+              onChange={set('email')}
+              placeholder={
+                isEN
+                  ? 'you@example.com'
+                  : 'you@example.com'
+              }
+            />
           </label>
 
           <label>
-            Họ và tên (không bắt buộc)
-            <input value={form.fullName} onChange={set('fullName')} placeholder="Nguyễn Văn A" />
+            {isEN
+              ? 'Full name (optional)'
+              : 'Họ và tên (không bắt buộc)'}
+
+            <input
+              value={form.fullName}
+              onChange={set('fullName')}
+              placeholder={
+                isEN
+                  ? 'Nguyen Van A'
+                  : 'Nguyễn Văn A'
+              }
+            />
           </label>
 
           <label>
-            Mật khẩu
-            <input type="password" autoComplete="new-password" value={form.password} onChange={set('password')} placeholder={uiLanguage === 'EN' ? 'At least 6 characters' : 'Tối thiểu 6 ký tự'} />
+            {isEN ? 'Password' : 'Mật khẩu'}
+
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={form.password}
+              onChange={set('password')}
+              placeholder={
+                isEN
+                  ? 'At least 6 characters'
+                  : 'Tối thiểu 6 ký tự'
+              }
+            />
           </label>
 
           <label>
-            Nhập lại mật khẩu
-            <input type="password" value={form.confirm} onChange={set('confirm')} placeholder="Nhập lại mật khẩu" />
+            {isEN
+              ? 'Confirm password'
+              : 'Nhập lại mật khẩu'}
+
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={form.confirm}
+              onChange={set('confirm')}
+              placeholder={
+                isEN
+                  ? 'Confirm your password'
+                  : 'Nhập lại mật khẩu'
+              }
+            />
           </label>
 
-          {error && <div className="alert">{error}</div>}
+          {error && (
+            <div className="alert">
+              {error}
+            </div>
+          )}
 
-          <button className="primary" disabled={busy}>
-            {busy ? 'Đang tạo tài khoản…' : 'Đăng ký'}
+          <button
+            className="primary"
+            disabled={busy}
+          >
+            {busy
+              ? (isEN
+                  ? 'Creating account…'
+                  : 'Đang tạo tài khoản…')
+              : (isEN
+                  ? 'Register'
+                  : 'Đăng ký')}
           </button>
         </form>
 
         <div className="switch-auth">
-          Đã có tài khoản?{' '}
-          <button type="button" className="link-btn" onClick={onSwitchToLogin}>
-            Đăng nhập
+          {isEN
+            ? 'Already have an account?'
+            : 'Đã có tài khoản?'}{' '}
+
+          <button
+            type="button"
+            className="link-btn"
+            onClick={onSwitchToLogin}
+          >
+            {isEN ? 'Login' : 'Đăng nhập'}
           </button>
         </div>
       </div>
@@ -595,6 +940,8 @@ function RequirementComposer({ onSubmit, busy }) {
 }
 
 function RequirementList({ items, loading, onDelete, onAnalyze, onView, analyzing }) {
+  const uiLanguage = useUiLanguage()
+
   return (
     <section className="card list-card">
       <div className="section-head">
@@ -623,7 +970,11 @@ function RequirementList({ items, loading, onDelete, onAnalyze, onView, analyzin
               <div>
                 <div className="req-id">
                   REQ-{String(r.id).padStart(4, '0')}
-                  {r.ownerUsername && <span className="req-owner"> · bởi {r.ownerUsername}</span>}
+                  {r.ownerUsername && (
+                    <span className="req-owner">
+                      · {uiLanguage === 'EN' ? 'by' : 'bởi'} {r.ownerUsername}
+                    </span>
+                  )}
                 </div>
                 <h3>{r.title}</h3>
                 <p>{r.rawDescription}</p>
@@ -743,6 +1094,7 @@ function AnalysisDrawer({ data, onClose, onExportHtml, onExportExcel }) {
 }
 
 function UserApp({ user, onLogout, onAdmin, onUserUpdate }) {
+  const uiLanguage = useUiLanguage()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -774,7 +1126,7 @@ function UserApp({ user, onLogout, onAdmin, onUserUpdate }) {
   }
 
   async function remove(id) {
-    if (!window.confirm('Bạn có chắc muốn xóa yêu cầu này?')) return
+    if (!(await showConfirmPopup({ title: uiLanguage === 'EN' ? 'Delete requirement' : 'Xóa yêu cầu', message: 'Bạn có chắc muốn xóa yêu cầu này?' }))) return
     try {
       await deleteRequirement(id)
       setItems(v => v.filter(x => x.id !== id))
@@ -941,7 +1293,7 @@ function UserDetailDrawer({ userId, currentUserId, onClose, onChanged, onDeleted
   async function removeUser() {
     if (!detail || Number(detail.id) === Number(currentUserId)) return
     const name = detail.fullName || detail.username
-    if (!window.confirm(`Xóa tài khoản ${name}? Toàn bộ Requirement và dữ liệu AI của tài khoản này sẽ bị xóa.`)) return
+    if (!(await showConfirmPopup({ title: uiLanguage === 'EN' ? 'Delete account' : 'Xóa tài khoản', message: uiLanguage === 'EN' ? `Delete account ${name}? All requirements and AI data for this account will be deleted.` : `Xóa tài khoản ${name}? Toàn bộ Requirement và dữ liệu AI của tài khoản này sẽ bị xóa.` }))) return
     setSavingField('delete')
     setError('')
     try {
@@ -952,6 +1304,25 @@ function UserDetailDrawer({ userId, currentUserId, onClose, onChanged, onDeleted
     } finally {
       setSavingField('')
     }
+  }
+
+  async function toggleAccountStatus() {
+    if (!detail || isSelf || isRootAdmin) return
+    const locking = Boolean(detail.active)
+    const confirmed = await showConfirmPopup({
+      title: locking
+        ? (uiLanguage === 'EN' ? 'Lock account' : 'Khóa tài khoản')
+        : (uiLanguage === 'EN' ? 'Unlock account' : 'Mở khóa tài khoản'),
+      message: locking
+        ? (uiLanguage === 'EN'
+          ? `Lock account ${detail.username}? The user will no longer be able to log in.`
+          : `Khóa tài khoản ${detail.username}? Người dùng sẽ không thể đăng nhập.`)
+        : (uiLanguage === 'EN'
+          ? `Unlock account ${detail.username}? The user will be able to log in again.`
+          : `Mở khóa tài khoản ${detail.username}? Người dùng sẽ có thể đăng nhập lại.`)
+    })
+    if (!confirmed) return
+    await applyUpdate({ active: !locking }, 'active')
   }
 
   async function applyUpdate(payload, field) {
@@ -1023,7 +1394,7 @@ function UserDetailDrawer({ userId, currentUserId, onClose, onChanged, onDeleted
 
               <div className="admin-control-row">
                 <label>{uiLanguage === 'EN' ? 'Account status' : 'Trạng thái tài khoản'}</label>
-                <button className={`account-lock-button ${detail.active ? 'danger-button' : 'secondary'}`} disabled={savingField === 'active' || isSelf || isRootAdmin} onClick={() => applyUpdate({ active: !detail.active }, 'active')}>
+                <button className={`account-lock-button ${detail.active ? 'danger-button' : 'secondary'}`} disabled={savingField === 'active' || isSelf || isRootAdmin} onClick={toggleAccountStatus}>
                   {savingField === 'active' ? (uiLanguage === 'EN' ? 'Saving…' : 'Đang lưu…') : detail.active ? (uiLanguage === 'EN' ? 'Lock account' : 'Khóa tài khoản') : (uiLanguage === 'EN' ? 'Unlock account' : 'Mở khóa tài khoản')}
                 </button>
               </div>
@@ -1202,9 +1573,9 @@ function AdminAuditTab({ user }) {
   function toggle(id) { setSelected(v => v.includes(id) ? v.filter(x => x !== id) : [...v, id]) }
   function toggleAll() { setSelected(allVisibleSelected ? [] : filtered.map(a => a.id)) }
   function resetFilters() { setSearch(''); setActionFilter('ALL'); setUserFilter('ALL'); setDateFrom(''); setDateTo(''); setSelected([]) }
-  async function removeOne(id) { if (!canDelete || !window.confirm('Bạn có chắc muốn xóa nhật ký này?')) return; try { await deleteAdminAudit(id); await load() } catch (e) { setError(e.response?.data?.message || 'Không thể xóa nhật ký.') } }
-  async function removeSelected() { if (!canDelete || !selected.length || !window.confirm(`Bạn có chắc muốn xóa ${selected.length} nhật ký đã chọn?`)) return; try { await Promise.all(selected.map(id => deleteAdminAudit(id))); await load() } catch (e) { setError(e.response?.data?.message || 'Không thể xóa nhật ký đã chọn.') } }
-  async function removeAll() { if (!canDelete || !items.length || !window.confirm('Bạn có chắc muốn xóa toàn bộ nhật ký quản trị? Hành động này không thể hoàn tác.')) return; try { await deleteAllAdminAudit(); await load() } catch (e) { setError(e.response?.data?.message || 'Không thể xóa toàn bộ nhật ký.') } }
+  async function removeOne(id) { if (!canDelete || !(await showConfirmPopup({ title: uiLanguage === 'EN' ? 'Delete audit log' : 'Xóa nhật ký', message: 'Bạn có chắc muốn xóa nhật ký này?' }))) return; try { await deleteAdminAudit(id); await load() } catch (e) { setError(e.response?.data?.message || 'Không thể xóa nhật ký.') } }
+  async function removeSelected() { if (!canDelete || !selected.length || !(await showConfirmPopup({ title: uiLanguage === 'EN' ? 'Delete selected logs' : 'Xóa nhật ký đã chọn', message: uiLanguage === 'EN' ? `Delete ${selected.length} selected audit logs?` : `Bạn có chắc muốn xóa ${selected.length} nhật ký đã chọn?` }))) return; try { await Promise.all(selected.map(id => deleteAdminAudit(id))); await load() } catch (e) { setError(e.response?.data?.message || 'Không thể xóa nhật ký đã chọn.') } }
+  async function removeAll() { if (!canDelete || !items.length || !(await showConfirmPopup({ title: uiLanguage === 'EN' ? 'Delete all audit logs' : 'Xóa toàn bộ nhật ký', message: uiLanguage === 'EN' ? 'Delete all administrator audit logs? This action cannot be undone.' : 'Bạn có chắc muốn xóa toàn bộ nhật ký quản trị? Hành động này không thể hoàn tác.' }))) return; try { await deleteAllAdminAudit(); await load() } catch (e) { setError(e.response?.data?.message || 'Không thể xóa toàn bộ nhật ký.') } }
   return <section className="card admin-log"><div className="section-head admin-section-head-responsive"><div><span className="eyebrow">AUDIT LOG</span><h2>Lịch sử hoạt động quản trị</h2></div><div className="admin-toolbar-actions"><span className="count">{filtered.length}/{items.length} bản ghi</span>{canDelete && <><button className="danger compact" disabled={!selected.length} onClick={removeSelected}>Xóa đã chọn{selected.length ? ` (${selected.length})` : ''}</button><button className="danger-outline compact" disabled={!items.length} onClick={removeAll}>Xóa toàn bộ</button></>}</div></div>
     <div className="admin-filters"><div className="search-box"><span aria-hidden="true">⌕</span><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm người dùng, hành động, nội dung…" aria-label="Tìm nhật ký" /></div><select value={userFilter} onChange={e => setUserFilter(e.target.value)} aria-label="Lọc người dùng"><option value="ALL">Tất cả người dùng</option>{usernames.map(x => <option key={x} value={x}>{x}</option>)}</select><select value={actionFilter} onChange={e => setActionFilter(e.target.value)} aria-label="Lọc hành động"><option value="ALL">Tất cả hành động</option>{actions.map(x => <option key={x} value={x}>{x}</option>)}</select><label className="date-filter">Từ <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></label><label className="date-filter">Đến <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} /></label><button className="filter-reset" onClick={resetFilters}>Reset</button></div>
     {canDelete && filtered.length > 0 && <div className="audit-select-all"><label><input type="checkbox" checked={allVisibleSelected} onChange={toggleAll} /> Chọn tất cả bản ghi đang hiển thị</label><span>Chỉ Admin gốc được xóa nhật ký</span></div>}
@@ -1240,8 +1611,12 @@ function AdminOverviewTab() {
   </section></>
 }
 
+const ADMIN_TAB_KEY = 'srs_admin_tab'
+const ADMIN_VIEW_KEY = 'srs_active_view'
+
 function AdminApp({ user, onBack, onLogout, onUserUpdate }) {
-  const [tab, setTab] = useState('overview')
+  const uiLanguage = useUiLanguage()
+  const [tab, setTab] = useState(() => localStorage.getItem(ADMIN_TAB_KEY) || 'overview')
   const [openUserId, setOpenUserId] = useState(null)
   const [usersRefreshKey, setUsersRefreshKey] = useState(0)
   const [creatingUser, setCreatingUser] = useState(false)
@@ -1249,6 +1624,10 @@ function AdminApp({ user, onBack, onLogout, onUserUpdate }) {
   const [nameSaved, setNameSaved] = useState(false)
   const [nameError, setNameError] = useState('')
   const [toast, setToast] = useState('')
+
+  useEffect(() => {
+    localStorage.setItem(ADMIN_TAB_KEY, tab)
+  }, [tab])
 
   async function saveMyName() {
     const value = nameInput.trim()
@@ -1334,7 +1713,11 @@ function AdminApp({ user, onBack, onLogout, onUserUpdate }) {
         onClose={() => setOpenUserId(null)}
         onChanged={updated => {
           setUsersRefreshKey(k => k + 1)
-          if (updated?.fullName) onUserUpdate(updated)
+          // Only synchronize the session when the drawer edited the currently
+          // logged-in admin. Never merge another user's account into this session.
+          if (updated?.id != null && Number(updated.id) === Number(user.id)) {
+            onUserUpdate(updated)
+          }
         }}
         onDeleted={() => {
           setOpenUserId(null)
@@ -1365,7 +1748,10 @@ function AdminApp({ user, onBack, onLogout, onUserUpdate }) {
 export default function App() {
   const [user, setUser] = useState(getStoredUser())
   const uiLanguage = useUiLanguage()
-  const [admin, setAdmin] = useState(false)
+  const [admin, setAdmin] = useState(() => {
+    const storedUser = getStoredUser()
+    return storedUser?.role === 'ADMIN' && localStorage.getItem(ADMIN_VIEW_KEY) === 'admin'
+  })
   const [authView, setAuthView] = useState('login')
 
   useEffect(() => {
@@ -1398,9 +1784,16 @@ export default function App() {
   }, [uiLanguage, user, authView, admin])
 
   useEffect(() => {
+    if (user?.role === 'ADMIN' && admin) localStorage.setItem(ADMIN_VIEW_KEY, 'admin')
+    else localStorage.removeItem(ADMIN_VIEW_KEY)
+  }, [admin, user?.role])
+
+  useEffect(() => {
     function handleExpired() {
       setUser(null)
       setAdmin(false)
+      localStorage.removeItem(ADMIN_VIEW_KEY)
+      localStorage.removeItem(ADMIN_TAB_KEY)
       setAuthView('login')
     }
     window.addEventListener('auth-expired', handleExpired)
@@ -1411,6 +1804,8 @@ export default function App() {
     logout().catch(() => {})
     localStorage.removeItem('srs_token')
     localStorage.removeItem('srs_user')
+    localStorage.removeItem(ADMIN_VIEW_KEY)
+    localStorage.removeItem(ADMIN_TAB_KEY)
     setUser(null)
     setAdmin(false)
     setAuthView('login')

@@ -1,0 +1,47 @@
+services:
+  - type: web
+    name: srs-analyzer-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: srs-analyzer-db
+          property: host
+      - key: DB_NAME
+        fromDatabase:
+          name: srs-analyzer-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: srs-analyzer-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: srs-analyzer-db
+          property: password
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        value: gemini-3.6-flash
+      - key: APP_CORS_ORIGIN
+        sync: false
+
+  - type: static
+    name: srs-analyzer-frontend
+    plan: free
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false
+
+databases:
+  - name: srs-analyzer-db
+    plan: free
+    databaseName: srs_analyzer_db
+    user: srs_analyzer

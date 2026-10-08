@@ -17,7 +17,7 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/export")
-@CrossOrigin(origins="http://localhost:5173")
+@CrossOrigin(origins = "${app.cors.origin}")
 @RequiredArgsConstructor
 public class ExcelExportController {
     private final RequirementRepository requirements;

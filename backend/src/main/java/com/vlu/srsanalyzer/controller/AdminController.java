@@ -18,7 +18,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "${app.cors.origin}")
 @RequiredArgsConstructor
 public class AdminController {
 
@@ -144,6 +144,12 @@ public class AdminController {
                 throw new RuntimeException("Không thể tự khóa tài khoản đang đăng nhập");
             }
             u.setActive(body.getActive());
+            // Locking an account must invalidate every existing session for
+            // that user; otherwise an already-issued bearer token remains
+            // usable until its 12-hour expiry.
+            if (!body.getActive()) {
+                auth.deleteTokensForUser(u.getId());
+            }
         }
         if (body.getTokenQuota() != null) {
             if (body.getTokenQuota() < 0) {

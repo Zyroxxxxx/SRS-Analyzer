@@ -1,0 +1,37 @@
+SRS Analyzer – UI Localization & Popup Fix
+
+Changes:
+1. Fixed Login language bug:
+   - English UI now shows English invalid-credentials / connection errors.
+   - Vietnamese UI keeps Vietnamese messages.
+   - Backend Vietnamese messages are translated through the UI translation map when possible.
+
+2. Removed browser-native window.confirm() confirmation dialogs.
+   - Requirement deletion
+   - User/account deletion
+   - Single audit-log deletion
+   - Selected audit-log deletion
+   - Delete-all audit logs
+   All now use a custom in-app modal instead of the browser “localhost says” popup.
+
+3. Added bilingual custom confirmation modal:
+   - English: Confirm / Cancel
+   - Vietnamese: Xác nhận / Hủy
+   - Danger styling for destructive actions
+   - ESC closes the dialog
+   - Clicking outside closes the dialog
+   - Mobile responsive layout
+
+4. Expanded UI translation coverage for previously missed hard-coded Vietnamese strings:
+   - User detail labels
+   - Account creation validation/errors
+   - Audit-log messages
+   - Analysis Result title
+   - HTML/PDF and Excel export labels
+   - Common backend error messages
+
+5. Kept existing F5/view persistence and Admin role-switch protections unchanged.
+
+Validation:
+- frontend/src/App.jsx successfully parsed with @babel/parser.
+- Full Vite build could not be run in this Linux environment because the ZIP contains Windows/host-specific node_modules and the Linux Rollup optional native package is missing. Run `npm install` then `npm run build` on the development machine.
