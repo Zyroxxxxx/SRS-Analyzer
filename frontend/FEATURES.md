@@ -6,3 +6,7 @@
 - AI analysis drawer with token usage
 - Admin operations dashboard and AI audit log
 - One-click SRS export (HTML -> browser Print -> PDF)
+- ChatGPT-style layout: Requirements sidebar (search, grouped by date), conversation thread, bottom composer
+- Generation A/B + requirement version history (restore / manual edit)
+- User Story: add / edit / AI rewrite / delete / confirm; Acceptance Criteria CRUD
+- Upload Word (.docx, max 100,000 words), SRS (HTML), Excel, SwimLane PNG, send by Email

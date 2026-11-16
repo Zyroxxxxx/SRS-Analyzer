@@ -44,7 +44,7 @@ public class AiAnalysisService {
             if (apiKey == null || apiKey.isBlank()) {
                 parsed = mockResult(req, user, prompt);
             } else {
-                JsonNode root = callGemini(prompt);
+                JsonNode root = callGemini(prompt, true);
                 String text = root.at("/candidates/0/content/parts/0/text").asText("");
                 JsonNode meta = root.path("usageMetadata");
                 int in = meta.path("promptTokenCount").asInt(0);
@@ -72,7 +72,25 @@ public class AiAnalysisService {
         }
     }
 
-    private JsonNode callGemini(String prompt) {
+    // Sinh van ban tu do (A/B, viet lai User Story...). Co kiem tra han muc token va ghi nhat ky usage.
+    @Transactional
+    public String complete(String prompt, User u, Requirement r, String demoFallback) {
+        enforceQuota(u);
+        if (apiKey == null || apiKey.isBlank()) {
+            usage.save(new AiUsage(null, u, r, prompt, 0, 0, 0, "Demo analyzer (LLM_API_KEY not configured)", null));
+            return demoFallback;
+        }
+        JsonNode root = callGemini(prompt, false);
+        String text = root.at("/candidates/0/content/parts/0/text").asText("").trim();
+        if (text.isEmpty()) throw new RuntimeException("AI khong tra ve noi dung. Vui long thu lai.");
+        JsonNode meta = root.path("usageMetadata");
+        int in = meta.path("promptTokenCount").asInt(0);
+        int out = meta.path("candidatesTokenCount").asInt(0);
+        usage.save(new AiUsage(null, u, r, prompt, in, out, meta.path("totalTokenCount").asInt(in + out), "Gemini", null));
+        return text;
+    }
+
+    private JsonNode callGemini(String prompt, boolean json) {
         String url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent";
         ObjectNode body = mapper.createObjectNode();
         ArrayNode contents = body.putArray("contents");
@@ -81,7 +99,7 @@ public class AiAnalysisService {
         parts.addObject().put("text", prompt);
         ObjectNode cfg = body.putObject("generationConfig");
         cfg.put("temperature", 0.2);
-        cfg.put("responseMimeType", "application/json");
+        if (json) cfg.put("responseMimeType", "application/json");
         return RestClient.create().post().uri(url)
                 .header("x-goog-api-key", apiKey)
                 .contentType(MediaType.valueOf(MediaType.APPLICATION_JSON_VALUE))
@@ -192,7 +210,7 @@ public class AiAnalysisService {
             if (us.isArray()) {
                 int i = 0;
                 for (JsonNode x : us) {
-                    UserStory story = new UserStory(null, r, x.isTextual() ? x.asText() : x.toString(), "MEDIUM", null);
+                    UserStory story = new UserStory(null, r, x.isTextual() ? x.asText() : x.toString(), "MEDIUM", false, null);
                     story = stories.save(story);
                     if (ac.isArray() && ac.size() > 0) {
                         JsonNode c = ac.get(Math.min(i, ac.size() - 1));

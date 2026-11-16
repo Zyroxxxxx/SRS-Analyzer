@@ -1,0 +1,5 @@
+node_modules/
+dist/
+target/
+backend/application-local.properties
+backend/src/main/resources/application-local.properties

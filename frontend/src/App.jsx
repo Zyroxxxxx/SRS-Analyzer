@@ -23,6 +23,8 @@ import {
   deleteAllAdminAudit
 } from './api/adminApi'
 import './App.css'
+import './theme.css'
+import ChatWorkspace from './ChatWorkspace.jsx'
 
 
 
@@ -1830,5 +1832,6 @@ export default function App() {
     return <AdminApp user={user} onBack={() => setAdmin(false)} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />
   }
 
-  return <UserApp user={user} onLogout={handleLogout} onAdmin={() => setAdmin(true)} onUserUpdate={handleUserUpdate} />
+  // Giao dien moi kieu ChatGPT (UserApp cu van con trong file de tham khao/rollback)
+  return <ChatWorkspace user={user} onLogout={handleLogout} onAdmin={() => setAdmin(true)} onUserUpdate={handleUserUpdate} />
 }

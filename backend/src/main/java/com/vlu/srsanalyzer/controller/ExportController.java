@@ -305,7 +305,7 @@ public class ExportController {
         return b.append("</ul>").toString();
     }
 
-    private String buildHtml(Requirement r, AnalysisResult a) {
+    public String buildHtml(Requirement r, AnalysisResult a) {
         String summary = a == null ? "Chua co ket qua phan tich." : esc(a.getSummary());
         return "<!doctype html><html><head><meta charset='utf-8'><title>SRS - " + esc(r.getTitle()) +
                 "</title><style>body{font-family:Arial,sans-serif;max-width:900px;margin:48px auto;color:#17211d;line-height:1.6}h1{font-size:30px}h2{margin-top:34px;border-bottom:1px solid #ddd;padding-bottom:7px}p,li{font-size:14px}.meta{color:#68746f}</style></head><body>" +

@@ -14,6 +14,7 @@ import com.vlu.srsanalyzer.repository.AnalysisResultRepository;
 import com.vlu.srsanalyzer.repository.AnalysisHistoryRepository;
 import com.vlu.srsanalyzer.repository.AuditLogRepository;
 import com.vlu.srsanalyzer.repository.RequirementRepository;
+import com.vlu.srsanalyzer.repository.RequirementVersionRepository;
 import com.vlu.srsanalyzer.repository.UserStoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,7 @@ public class RequirementService {
     private final AnalysisHistoryRepository histories;
     private final AuditLogRepository auditLogs;
     private final AiUsageRepository usage;
+    private final RequirementVersionRepository versions;
 
     public List<RequirementResponse> getAll(User user) {
         List<Requirement> list = user.getRole() == Role.ADMIN
@@ -85,6 +87,7 @@ public class RequirementService {
         stories.deleteByRequirementId(requirementId);
 
         // Other direct children of Requirement.
+        versions.deleteByRequirementId(requirementId);
         histories.deleteByRequirementId(requirementId);
         usage.deleteByRequirementId(requirementId);
         results.deleteByRequirementId(requirementId);

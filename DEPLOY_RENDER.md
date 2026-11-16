@@ -19,6 +19,12 @@ Set these values when Render asks for them:
 
 Database host/name/user/password variables are linked automatically from the Render PostgreSQL database. The Spring Boot app builds the required JDBC URL from those variables.
 
+### Gui email (tuy chon)
+Them thu cong trong Render -> backend -> Environment (khong de gia tri rong, neu khong dung thi bo qua):
+- `SPRING_MAIL_HOST` (vd `smtp.gmail.com`), `SPRING_MAIL_PORT` (`587`)
+- `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD` (Gmail: dung App Password)
+- `MAIL_FROM` (dia chi nguoi gui; voi Gmail phai trung username)
+
 ## 4. After first deployment
 If the frontend/backend URLs changed, update:
 - frontend `VITE_API_BASE_URL`

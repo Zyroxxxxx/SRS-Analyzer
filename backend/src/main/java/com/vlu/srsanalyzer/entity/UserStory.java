@@ -29,6 +29,10 @@ public class UserStory {
     @Column(length = 20)
     private String priority; // HIGH / MEDIUM / LOW
 
+    // Nguoi dung da xac nhan User Story (va Acceptance Criteria cua no)
+    @Column(name = "confirmed")
+    private Boolean confirmed = false;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
